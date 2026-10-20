@@ -1,0 +1,248 @@
+<?xml version="1.0"?>
+<!--
+  Blimp model for Gazebo Fortress (ign gazebo 6) + ROS 2 Humble.
+  Mass budget (target ~neutral buoyancy in air, rho = 1.225 kg/m^3):
+    displaced air = hull cylinder (r=0.30, L=1.00) 0.2827 m^3 + gondola 0.00048 m^3  -> 0.3469 kg
+    model mass    = hull 0.303 + gondola 0.040 + 3 props x 0.002                     -> 0.3490 kg
+    net           = ~ -0.002 kg (slightly heavy, ~ -0.02 N) -> vertical thruster trims it.
+  CoM sits below center of buoyancy (gondola hangs under hull) -> passive roll/pitch stability.
+  Proposed sensor stack (all on gondola):
+    front RGB camera, downward camera (optical-flow stand-in), IMU 200 Hz,
+    downward 1-beam rangefinder, 16-channel 3D lidar.
+-->
+<sdf version="1.8">
+  <model name="blimp">
+    <pose>0 0 1.5 0 0 0</pose>
+
+    <!-- ================= HULL (envelope + helium) ================= -->
+    <link name="hull">
+      <inertial>
+        <mass>0.303</mass>
+        <inertia>
+          <ixx>0.01364</ixx><iyy>0.03207</iyy><izz>0.03207</izz>
+          <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
+        </inertia>
+      </inertial>
+      <collision name="hull_collision">
+        <pose>0 0 0 0 1.5708 0</pose>
+        <geometry><cylinder><radius>0.30</radius><length>1.00</length></cylinder></geometry>
+      </collision>
+      <visual name="hull_visual">
+        <pose>0 0 0 0 1.5708 0</pose>
+        <geometry><cylinder><radius>0.30</radius><length>1.00</length></cylinder></geometry>
+        <material><ambient>0.85 0.85 0.9 1</ambient><diffuse>0.85 0.85 0.9 1</diffuse></material>
+      </visual>
+      <visual name="nose">
+        <pose>0.5 0 0 0 0 0</pose>
+        <geometry><sphere><radius>0.30</radius></sphere></geometry>
+        <material><ambient>0.85 0.85 0.9 1</ambient><diffuse>0.85 0.85 0.9 1</diffuse></material>
+      </visual>
+      <visual name="tail">
+        <pose>-0.5 0 0 0 0 0</pose>
+        <geometry><sphere><radius>0.30</radius></sphere></geometry>
+        <material><ambient>0.85 0.85 0.9 1</ambient><diffuse>0.85 0.85 0.9 1</diffuse></material>
+      </visual>
+      <visual name="fin_v">
+        <pose>-0.75 0 0.25 0 0 0</pose>
+        <geometry><box><size>0.20 0.01 0.20</size></box></geometry>
+        <material><ambient>0.9 0.5 0.1 1</ambient><diffuse>0.9 0.5 0.1 1</diffuse></material>
+      </visual>
+      <visual name="fin_h">
+        <pose>-0.75 0 0 0 0 0</pose>
+        <geometry><box><size>0.20 0.60 0.01</size></box></geometry>
+        <material><ambient>0.9 0.5 0.1 1</ambient><diffuse>0.9 0.5 0.1 1</diffuse></material>
+      </visual>
+    </link>
+
+    <!-- ================= GONDOLA (electronics + sensors) ================= -->
+    <link name="gondola">
+      <pose>0 0 -0.36 0 0 0</pose>
+      <inertial>
+        <mass>0.040</mass>
+        <inertia>
+          <ixx>2.97e-5</ixx><iyy>5.63e-5</iyy><izz>6.93e-5</izz>
+          <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
+        </inertia>
+      </inertial>
+      <collision name="gondola_collision">
+        <geometry><box><size>0.12 0.08 0.05</size></box></geometry>
+      </collision>
+      <visual name="gondola_visual">
+        <geometry><box><size>0.12 0.08 0.05</size></box></geometry>
+        <material><ambient>0.2 0.2 0.2 1</ambient><diffuse>0.2 0.2 0.2 1</diffuse></material>
+      </visual>
+      <visual name="arm">
+        <geometry><box><size>0.02 0.54 0.01</size></box></geometry>
+        <material><ambient>0.3 0.3 0.3 1</ambient><diffuse>0.3 0.3 0.3 1</diffuse></material>
+      </visual>
+
+      <!-- IMU -->
+      <sensor name="imu" type="imu">
+        <always_on>1</always_on>
+        <update_rate>200</update_rate>
+        <topic>blimp/imu</topic>
+        <ignition_frame_id>imu_link</ignition_frame_id>
+        <imu>
+          <angular_velocity>
+            <x><noise type="gaussian"><mean>0</mean><stddev>0.002</stddev></noise></x>
+            <y><noise type="gaussian"><mean>0</mean><stddev>0.002</stddev></noise></y>
+            <z><noise type="gaussian"><mean>0</mean><stddev>0.002</stddev></noise></z>
+          </angular_velocity>
+          <linear_acceleration>
+            <x><noise type="gaussian"><mean>0</mean><stddev>0.02</stddev></noise></x>
+            <y><noise type="gaussian"><mean>0</mean><stddev>0.02</stddev></noise></y>
+            <z><noise type="gaussian"><mean>0</mean><stddev>0.02</stddev></noise></z>
+          </linear_acceleration>
+        </imu>
+      </sensor>
+
+      <!-- Forward RGB camera -->
+      <sensor name="front_camera" type="camera">
+        <pose>0.07 0 0 0 0 0</pose>
+        <always_on>1</always_on>
+        <update_rate>30</update_rate>
+        <topic>blimp/front_camera</topic>
+        <ignition_frame_id>front_camera_link</ignition_frame_id>
+        <camera>
+          <horizontal_fov>1.3963</horizontal_fov>
+          <image><width>640</width><height>480</height><format>R8G8B8</format></image>
+          <clip><near>0.05</near><far>50</far></clip>
+          <noise><type>gaussian</type><mean>0</mean><stddev>0.007</stddev></noise>
+        </camera>
+      </sensor>
+
+      <!-- Downward camera: stand-in for the optical flow sensor -->
+      <sensor name="down_camera" type="camera">
+        <pose>0 0 -0.03 0 1.5708 0</pose>
+        <always_on>1</always_on>
+        <update_rate>30</update_rate>
+        <topic>blimp/down_camera</topic>
+        <ignition_frame_id>down_camera_link</ignition_frame_id>
+        <camera>
+          <horizontal_fov>0.733</horizontal_fov>
+          <image><width>160</width><height>160</height><format>L8</format></image>
+          <clip><near>0.05</near><far>30</far></clip>
+        </camera>
+      </sensor>
+
+      <!-- Downward single-beam rangefinder (ToF / sonar stand-in) -->
+      <sensor name="down_range" type="gpu_lidar">
+        <pose>0 0.03 -0.03 0 1.5708 0</pose>
+        <always_on>1</always_on>
+        <update_rate>50</update_rate>
+        <topic>blimp/range</topic>
+        <ignition_frame_id>range_link</ignition_frame_id>
+        <lidar>
+          <scan>
+            <horizontal><samples>1</samples><resolution>1</resolution><min_angle>0</min_angle><max_angle>0</max_angle></horizontal>
+            <vertical><samples>1</samples><resolution>1</resolution><min_angle>0</min_angle><max_angle>0</max_angle></vertical>
+          </scan>
+          <range><min>0.04</min><max>4.0</max><resolution>0.001</resolution></range>
+          <noise><type>gaussian</type><mean>0</mean><stddev>0.005</stddev></noise>
+        </lidar>
+      </sensor>
+
+      <!-- 16-channel 3D lidar -->
+      <sensor name="lidar" type="gpu_lidar">
+        <pose>0.05 0 0.035 0 0 0</pose>
+        <always_on>1</always_on>
+        <update_rate>10</update_rate>
+        <topic>blimp/lidar</topic>
+        <ignition_frame_id>lidar_link</ignition_frame_id>
+        <lidar>
+          <scan>
+            <horizontal><samples>900</samples><resolution>1</resolution><min_angle>-3.14159</min_angle><max_angle>3.14159</max_angle></horizontal>
+            <vertical><samples>16</samples><resolution>1</resolution><min_angle>-0.2618</min_angle><max_angle>0.2618</max_angle></vertical>
+          </scan>
+          <range><min>0.3</min><max>30</max><resolution>0.01</resolution></range>
+          <noise><type>gaussian</type><mean>0</mean><stddev>0.01</stddev></noise>
+        </lidar>
+      </sensor>
+    </link>
+
+    <joint name="hull_gondola" type="fixed">
+      <parent>hull</parent><child>gondola</child>
+    </joint>
+
+    <!-- ================= PROPELLERS (thrust along joint axis) ================= -->
+    <link name="left_prop">
+      <pose>0 0.27 -0.36 0 0 0</pose>
+      <inertial><mass>0.002</mass><inertia><ixx>2e-6</ixx><iyy>1e-6</iyy><izz>1e-6</izz><ixy>0</ixy><ixz>0</ixz><iyz>0</iyz></inertia></inertial>
+      <visual name="v"><pose>0 0 0 0 1.5708 0</pose><geometry><cylinder><radius>0.05</radius><length>0.005</length></cylinder></geometry>
+        <material><ambient>0.1 0.4 0.9 1</ambient><diffuse>0.1 0.4 0.9 1</diffuse></material></visual>
+    </link>
+    <joint name="left_prop_joint" type="revolute">
+      <parent>gondola</parent><child>left_prop</child>
+      <axis><xyz>1 0 0</xyz><limit><lower>-1e16</lower><upper>1e16</upper></limit></axis>
+    </joint>
+
+    <link name="right_prop">
+      <pose>0 -0.27 -0.36 0 0 0</pose>
+      <inertial><mass>0.002</mass><inertia><ixx>2e-6</ixx><iyy>1e-6</iyy><izz>1e-6</izz><ixy>0</ixy><ixz>0</ixz><iyz>0</iyz></inertia></inertial>
+      <visual name="v"><pose>0 0 0 0 1.5708 0</pose><geometry><cylinder><radius>0.05</radius><length>0.005</length></cylinder></geometry>
+        <material><ambient>0.1 0.4 0.9 1</ambient><diffuse>0.1 0.4 0.9 1</diffuse></material></visual>
+    </link>
+    <joint name="right_prop_joint" type="revolute">
+      <parent>gondola</parent><child>right_prop</child>
+      <axis><xyz>1 0 0</xyz><limit><lower>-1e16</lower><upper>1e16</upper></limit></axis>
+    </joint>
+
+    <link name="vert_prop">
+      <pose>-0.10 0 -0.40 0 0 0</pose>
+      <inertial><mass>0.002</mass><inertia><ixx>1e-6</ixx><iyy>1e-6</iyy><izz>2e-6</izz><ixy>0</ixy><ixz>0</ixz><iyz>0</iyz></inertia></inertial>
+      <visual name="v"><geometry><cylinder><radius>0.05</radius><length>0.005</length></cylinder></geometry>
+        <material><ambient>0.9 0.2 0.2 1</ambient><diffuse>0.9 0.2 0.2 1</diffuse></material></visual>
+    </link>
+    <joint name="vert_prop_joint" type="revolute">
+      <parent>gondola</parent><child>vert_prop</child>
+      <axis><xyz>0 0 1</xyz><limit><lower>-1e16</lower><upper>1e16</upper></limit></axis>
+    </joint>
+
+    <!-- ================= PLUGINS ================= -->
+    <!-- Thrusters: command thrust in N on /model/blimp/joint/<joint>/cmd_thrust -->
+    <plugin filename="ignition-gazebo-thruster-system" name="ignition::gazebo::systems::Thruster">
+      <namespace>blimp</namespace>
+      <joint_name>left_prop_joint</joint_name>
+      <thrust_coefficient>0.004</thrust_coefficient>
+      <fluid_density>1.225</fluid_density>
+      <propeller_diameter>0.1</propeller_diameter>
+    </plugin>
+    <plugin filename="ignition-gazebo-thruster-system" name="ignition::gazebo::systems::Thruster">
+      <namespace>blimp</namespace>
+      <joint_name>right_prop_joint</joint_name>
+      <thrust_coefficient>0.004</thrust_coefficient>
+      <fluid_density>1.225</fluid_density>
+      <propeller_diameter>0.1</propeller_diameter>
+    </plugin>
+    <plugin filename="ignition-gazebo-thruster-system" name="ignition::gazebo::systems::Thruster">
+      <namespace>blimp</namespace>
+      <joint_name>vert_prop_joint</joint_name>
+      <thrust_coefficient>0.004</thrust_coefficient>
+      <fluid_density>1.225</fluid_density>
+      <propeller_diameter>0.1</propeller_diameter>
+    </plugin>
+
+    <!-- Aerodynamic damping (reuses the Fossen-style hydrodynamics system with air density).
+         Added-mass terms left at 0 for stability; tune damping later from flight data. -->
+    <plugin filename="ignition-gazebo-hydrodynamics-system" name="ignition::gazebo::systems::Hydrodynamics">
+      <link_name>hull</link_name>
+      <water_density>1.225</water_density>
+      <xDotU>0</xDotU><yDotV>0</yDotV><zDotW>0</zDotW>
+      <kDotP>0</kDotP><mDotQ>0</mDotQ><nDotR>0</nDotR>
+      <xUabsU>-0.15</xUabsU><xU>-0.05</xU>
+      <yVabsV>-0.40</yVabsV><yV>-0.10</yV>
+      <zWabsW>-0.40</zWabsW><zW>-0.10</zW>
+      <kPabsP>-0.005</kPabsP><kP>-0.005</kP>
+      <mQabsQ>-0.02</mQabsQ><mQ>-0.01</mQ>
+      <nRabsR>-0.02</nRabsR><nR>-0.01</nR>
+    </plugin>
+
+    <!-- Ground-truth odometry -->
+    <plugin filename="ignition-gazebo-odometry-publisher-system" name="ignition::gazebo::systems::OdometryPublisher">
+      <odom_frame>odom</odom_frame>
+      <robot_base_frame>hull</robot_base_frame>
+      <dimensions>3</dimensions>
+      <odom_publish_frequency>50</odom_publish_frequency>
+    </plugin>
+  </model>
+</sdf>

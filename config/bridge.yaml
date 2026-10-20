@@ -1,0 +1,62 @@
+# ros_gz_bridge config (Humble + Fortress -> ignition.msgs types)
+- ros_topic_name: /clock
+  gz_topic_name: /clock
+  ros_type_name: rosgraph_msgs/msg/Clock
+  gz_type_name: ignition.msgs.Clock
+  direction: GZ_TO_ROS
+
+# ---- sensors ----
+- ros_topic_name: /blimp/imu
+  gz_topic_name: blimp/imu
+  ros_type_name: sensor_msgs/msg/Imu
+  gz_type_name: ignition.msgs.IMU
+  direction: GZ_TO_ROS
+- ros_topic_name: /blimp/front_camera/image_raw
+  gz_topic_name: blimp/front_camera
+  ros_type_name: sensor_msgs/msg/Image
+  gz_type_name: ignition.msgs.Image
+  direction: GZ_TO_ROS
+- ros_topic_name: /blimp/front_camera/camera_info
+  gz_topic_name: blimp/front_camera/camera_info
+  ros_type_name: sensor_msgs/msg/CameraInfo
+  gz_type_name: ignition.msgs.CameraInfo
+  direction: GZ_TO_ROS
+- ros_topic_name: /blimp/down_camera/image_raw
+  gz_topic_name: blimp/down_camera
+  ros_type_name: sensor_msgs/msg/Image
+  gz_type_name: ignition.msgs.Image
+  direction: GZ_TO_ROS
+- ros_topic_name: /blimp/range
+  gz_topic_name: blimp/range
+  ros_type_name: sensor_msgs/msg/LaserScan
+  gz_type_name: ignition.msgs.LaserScan
+  direction: GZ_TO_ROS
+- ros_topic_name: /blimp/lidar/points
+  gz_topic_name: blimp/lidar/points
+  ros_type_name: sensor_msgs/msg/PointCloud2
+  gz_type_name: ignition.msgs.PointCloudPacked
+  direction: GZ_TO_ROS
+
+# ---- ground truth ----
+- ros_topic_name: /blimp/odom_gt
+  gz_topic_name: /model/blimp/odometry
+  ros_type_name: nav_msgs/msg/Odometry
+  gz_type_name: ignition.msgs.Odometry
+  direction: GZ_TO_ROS
+
+# ---- actuators (ROS -> Gazebo), thrust in Newtons ----
+- ros_topic_name: /blimp/thrust/left
+  gz_topic_name: /model/blimp/joint/left_prop_joint/cmd_thrust
+  ros_type_name: std_msgs/msg/Float64
+  gz_type_name: ignition.msgs.Double
+  direction: ROS_TO_GZ
+- ros_topic_name: /blimp/thrust/right
+  gz_topic_name: /model/blimp/joint/right_prop_joint/cmd_thrust
+  ros_type_name: std_msgs/msg/Float64
+  gz_type_name: ignition.msgs.Double
+  direction: ROS_TO_GZ
+- ros_topic_name: /blimp/thrust/vertical
+  gz_topic_name: /model/blimp/joint/vert_prop_joint/cmd_thrust
+  ros_type_name: std_msgs/msg/Float64
+  gz_type_name: ignition.msgs.Double
+  direction: ROS_TO_GZ

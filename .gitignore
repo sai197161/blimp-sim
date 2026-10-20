@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+thrust_test_*.csv
+*.mcap
+sim_run*/
+log/
+build/
+install/
+.DS_Store
