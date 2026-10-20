@@ -6,5 +6,7 @@ set -e
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source /opt/ros/humble/setup.bash
 export ROS_DOMAIN_ID="${ROS_DOMAIN_ID:-42}"
+export IGN_PARTITION="${IGN_PARTITION:-sai_blimp}"
+export GZ_PARTITION="$IGN_PARTITION"
 HEADLESS=false; [ "$1" = "headless" ] && HEADLESS=true
 exec ros2 launch "$ROOT/launch/blimp_sim.launch.py" headless:=$HEADLESS
