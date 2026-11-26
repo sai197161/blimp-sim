@@ -136,6 +136,9 @@ def main():
         rclpy.spin(TagLocalizer())
     except (KeyboardInterrupt, ExternalShutdownException):
         pass  # normal when the launch file shuts down
+    except Exception:  # Humble shutdown race: RCLError 'context is not valid' after Ctrl-C
+        if rclpy.ok():
+            raise
 
 
 if __name__ == "__main__":
