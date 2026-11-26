@@ -78,6 +78,16 @@ def make_pattern(name, L, W, start, z, margin, margin_x=None):
                 a = math.pi * 2 * k / 12 * d
                 pts.append((cx + r * math.cos(a) * (-d), r * math.sin(a), z))
         return [(sx, sy, z)] + pts + [(sx, sy, z)], False
+    if name == "track":
+        # rounded "running track": two straights joined by half circles. No sharp corners, so a slow-turning
+        # blimp can follow it; laps until the timeout. Starts on the lower straight heading +x.
+        rad = min((y1 - y0) / 2, 2.2)  # flown path sits ~0.4 m outside this, i.e. y = +-2.6: clear of the pillars
+        xa, xb, yc = x0 + rad, x1 - rad, (y0 + y1) / 2
+        pts = [(xa, y0, z), (xb, y0, z)]  # straights are single segments (line-of-sight guidance follows them)
+        pts += [(xb + rad * math.sin(a), yc - rad * math.cos(a), z) for a in (math.pi * k / 6 for k in range(1, 6))]
+        pts += [(xb, y1, z), (xa, y1, z)]
+        pts += [(xa - rad * math.sin(a), yc + rad * math.cos(a), z) for a in (math.pi * k / 6 for k in range(1, 6))]
+        return pts, True
     if name == "spin":
         return [("spin", sx, sy, z)], False
     if name == "patrol":
@@ -106,6 +116,10 @@ class Flight(Node):
                                              P("margin_x", 3.5))
         self.radius = P("arrive_radius", 0.6)
         self.f_max = P("max_forward", 0.06)  # N per side
+        self.v_cruise = P("cruise_speed", 0.45)  # m/s
+        self.lookahead = P("lookahead", 1.5)  # m
+        self.k_yaw, self.k_rate = P("k_yaw", 0.05), P("k_rate", 0.08)  # N per side per rad, per rad/s
+        self.v_corner = P("corner_speed", 0.12)  # m/s at a 90+ deg turn; straight-through waypoints keep cruise
         self.timeout = P("timeout", 900.0)
         self.i = 0
         self.state = None
@@ -117,6 +131,18 @@ class Flight(Node):
         self.pub = {k: self.create_publisher(Float64, f"/{self.agent}/thrust/{k}", 10) for k in ("left", "right", "vertical")}
         self.create_subscription(Odometry, f"/{self.agent}/odom_gt", self.on_odom, 20)
         self.get_logger().info(f"{self.agent}: {len(self.wps)} waypoints, trim {self.trim:.3f} N, repeat={self.repeat}")
+
+    def corner_speed(self, i):
+        """Allowed speed at waypoint i from the turn angle to the next one."""
+        n = len(self.wps)
+        if i + 1 >= n and not self.repeat or i == 0:
+            return self.v_corner
+        a, b, c = self.wps[i - 1], self.wps[i], self.wps[(i + 1) % n]
+        if "spin" in (a[0], b[0], c[0]):
+            return 0.0
+        turn = abs(wrap(math.atan2(c[1] - b[1], c[0] - b[0]) - math.atan2(b[1] - a[1], b[0] - a[0])))
+        k = min(1.0, turn / (math.pi / 3))  # 60 deg or more: corner speed
+        return self.v_cruise * (1 - k) + self.v_corner * k
 
     def send(self, l, r, v):
         for k, val in (("left", l), ("right", r), ("vertical", v)):
@@ -150,13 +176,32 @@ class Flight(Node):
             tx, ty, tz = wp
             dx, dy = tx - p.x, ty - p.y
             dist = math.hypot(dx, dy)
-            e = wrap(math.atan2(dy, dx) - yaw) if dist > 0.3 else 0.0
-            u = max(-0.04, min(0.04, 0.03 * e - 0.06 * r))
+            prev = self.wps[self.i - 1] if (self.i > 0 or self.repeat) else None
+            if prev is not None and prev[0] == "spin":
+                prev = None
+            # line-of-sight guidance: steer at a point `lookahead` ahead on the segment prev -> wp, so the blimp
+            # follows the line instead of bowing out after every turn
+            ax, ay = tx, ty
+            if prev is not None:
+                sx_, sy_ = tx - prev[0], ty - prev[1]
+                seg = math.hypot(sx_, sy_)
+                if seg > 1e-3:
+                    along = ((p.x - prev[0]) * sx_ + (p.y - prev[1]) * sy_) / seg
+                    k = min(seg, max(0.0, along) + self.lookahead) / seg
+                    ax, ay = prev[0] + sx_ * k, prev[1] + sy_ * k
+            e = wrap(math.atan2(ay - p.y, ax - p.x) - yaw) if math.hypot(ax - p.x, ay - p.y) > 0.3 else 0.0
+            u = max(-0.04, min(0.04, self.k_yaw * e - self.k_rate * r))
             v_fwd = math.cos(yaw) * vx + math.sin(yaw) * vy
-            final = self.i == len(self.wps) - 1
-            scale = min(1.0, dist / 2.0) if final else max(0.4, min(1.0, dist / 1.5))
-            fwd = max(0.0, self.f_max * scale * max(0.0, math.cos(e)) ** 2 - (0.05 * v_fwd if final else 0.0))
-            arrived = dist < self.radius and abs(tz - p.z) < 0.4
+            final = self.i == len(self.wps) - 1 and not self.repeat
+            # speed we may have at this waypoint: slow for sharp turns, stop at the last one
+            v_wp = 0.0 if final else self.corner_speed(self.i)
+            v_des = min(self.v_cruise, v_wp + 0.2 * dist) * max(0.0, math.cos(e)) ** 2
+            # drag feed-forward (per side) + speed feedback; negative thrust brakes
+            ff = (0.05 * v_des + 0.15 * v_des * v_des) / 2
+            fwd = max(-0.04, min(self.f_max, ff + 0.12 * (v_des - v_fwd)))
+            passed = (not final and prev is not None and prev[0] != "spin" and dist < 1.5
+                      and (tx - prev[0]) * dx + (ty - prev[1]) * dy < 0)  # already beyond it along the path
+            arrived = (dist < self.radius and abs(tz - p.z) < 0.4) or passed
 
         ez = tz - p.z
         self.z_int = max(-2.0, min(2.0, self.z_int + ez * dt))

@@ -5,7 +5,7 @@
 #   bash scripts/run_benchmark.sh <methods> [scenario] [pattern] [stacks]
 #     methods  comma list from config/slam/methods.yaml, or "all" (skips ones the stack can't support)
 #     scenario default arena_solo
-#     pattern  lawnmower | loop | loop3d | figure8 | spin        (default loop)
+#     pattern  lawnmower | loop | loop3d | figure8 | spin | track (default loop)
 #     stacks   comma list of sensor stacks for the ego             (default: the scenario's own)
 #
 #   bash scripts/run_benchmark.sh slam_toolbox,rtabmap_stereo

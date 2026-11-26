@@ -2,8 +2,8 @@
 # One-command demo, made for SSH: runs the arena headless, flies the blimp, saves videos and pictures.
 #
 #   bash scripts/demo.sh [scenario] [sim_seconds] [pattern]
-#   bash scripts/demo.sh                          # arena_solo, 150 s, loop
-#   bash scripts/demo.sh arena_1v1 120 loop       # with an opponent patrolling
+#   bash scripts/demo.sh                          # arena_solo, 150 s, track (rounded laps)
+#   bash scripts/demo.sh arena_1v1 120 track      # with an opponent patrolling
 #   HEADLESS=false bash scripts/demo.sh           # also open the Gazebo GUI (only if you have a display, e.g. VNC)
 #
 # Output: demo_out/<stamp>_<scenario>/  overview.mp4 topdown.mp4 onboard.mp4 scan_map.png altitude.png
@@ -12,7 +12,7 @@ set -u
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SCENARIO="${1:-arena_solo}"
 DURATION="${2:-150}"
-PATTERN="${3:-loop}"
+PATTERN="${3:-track}"
 AGENT="${AGENT:-blimp}"
 HEADLESS="${HEADLESS:-true}"
 OUT="$ROOT/demo_out/$(date +%Y%m%d_%H%M%S)_${SCENARIO}"

@@ -205,8 +205,8 @@ One command runs the arena headless, flies the blimp around a loop with the full
 saves videos and pictures you can copy to your laptop:
 
 ```bash
-bash scripts/demo.sh                     # arena_solo, 150 sim-seconds, loop
-bash scripts/demo.sh arena_1v1 120 loop  # with an opponent blimp patrolling
+bash scripts/demo.sh                      # arena_solo, 150 sim-seconds, rounded laps (track)
+bash scripts/demo.sh arena_1v1 120 track # with an opponent blimp patrolling
 ```
 
 It writes `demo_out/<stamp>_<scenario>/` and prints the `scp` line to run on your laptop:
