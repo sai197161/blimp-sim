@@ -12,7 +12,7 @@
   gz_type_name: ignition.msgs.IMU
   direction: GZ_TO_ROS
 - ros_topic_name: /blimp/front_camera/image_raw
-  gz_topic_name: blimp/front_camera
+  gz_topic_name: blimp/front_camera/image
   ros_type_name: sensor_msgs/msg/Image
   gz_type_name: ignition.msgs.Image
   direction: GZ_TO_ROS
@@ -22,7 +22,7 @@
   gz_type_name: ignition.msgs.CameraInfo
   direction: GZ_TO_ROS
 - ros_topic_name: /blimp/down_camera/image_raw
-  gz_topic_name: blimp/down_camera
+  gz_topic_name: blimp/down_camera/image
   ros_type_name: sensor_msgs/msg/Image
   gz_type_name: ignition.msgs.Image
   direction: GZ_TO_ROS
