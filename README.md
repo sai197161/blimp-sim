@@ -1,13 +1,19 @@
 # blimp-sim
 
-Gazebo Fortress simulation of the VIP indoor blimp with the proposed vision/state-estimation sensor stack, bridged to ROS 2 Humble.
+Gazebo Fortress simulation of the VIP indoor blimp, bridged to ROS 2 Humble.
 
 - Lighter-than-air physics: buoyancy from displaced air, near-neutral by design
 - 3 thrusters: left/right forward (differential yaw) + 1 vertical
 - Aerodynamic damping
-- Sensors: IMU, front RGB camera, downward camera (optical-flow stand-in), downward rangefinder, 16-channel 3D lidar
 - Ground-truth odometry for evaluating SLAM / state estimation
-- Scripted thrust test that checks flight behavior and sensor rates
+- **Scenario generator**: competition-style arena (goal hoops, floating balls, AprilTag + poster landmarks),
+  multiple agents (team / opponents), swappable **sensor stacks** described in YAML (what and where)
+- Proposed stack: stereo camera, 2D lidar, ToF, barometer, IMU, optical flow (emulated)
+- **SLAM benchmark**: slam_toolbox, Cartographer, RTAB-Map variants, AprilTag localization, EKF baseline,
+  scored against ground truth (ATE / RPE / coverage / CPU)
+
+The original single-blimp setup (steps 1-8 below) still works unchanged. The new workflow is in
+[Arena, sensor stacks & SLAM benchmark](#arena-sensor-stacks--slam-benchmark).
 
 **No build step.** It runs straight from the cloned folder.
 
@@ -190,3 +196,106 @@ blimp-sim/
 - No added-mass model yet (significant for blimps); add `xDotU` etc. after basic flight is verified.
 - Real hull is an ellipsoid; the cylinder slightly overestimates volume.
 - Next: realistic indoor environment, then run an off-the-shelf SLAM (e.g. ORB-SLAM3 / FAST-LIO) on sim bags against `/blimp/odom_gt`.
+
+---
+
+## Arena, sensor stacks & SLAM benchmark
+
+### How it fits together
+```
+config/scenarios/<name>.yaml ──┐   (world + arena knobs + list of agents)
+config/sensor_stacks/<s>.yaml ─┤   (sensors, mounts, poses, rates, noise, masses)
+                               ▼
+              scripts/build_scenario.py ──► generated/<scenario>/   (git-ignored)
+                                             world.sdf  bridge.yaml  static_tf.yaml  scenario_info.yaml
+                                             landmarks.yaml  ekf_<agent>.yaml  <agent>_camchain.yaml / _imu.yaml
+                               ▼
+     launch/scenario.launch.py  (runs the generator, Gazebo, bridge, TFs, flow/altitude nodes, EKF)
+     launch/slam.launch.py      (one method from config/slam/methods.yaml)
+     scripts/run_benchmark.sh   (scenario + method + scripted flight + recorder + scoring, headless)
+```
+The generator also prints a **mass budget** for every agent. With `hull.auto_scale: true` it grows the
+envelope until the blimp is ~2 g heavy again. That shows what each sensor costs in envelope size
+(the full stack needs a hull ~11 % bigger than the original).
+
+### Extra packages
+```bash
+sudo apt install ros-humble-robot-localization ros-humble-slam-toolbox ros-humble-cartographer-ros \
+                 ros-humble-rtabmap-ros ros-humble-apriltag-ros
+pip3 install --user psutil matplotlib     # optional: CPU logging, trajectory plots
+```
+
+### Scenarios (`config/scenarios/`)
+| Scenario | What |
+|---|---|
+| `arena_solo` | 20×12×6 m arena, ego blimp with `full_stack`. The standard benchmark world |
+| `arena_1v1` | + one opponent. **Every arena knob is documented in this file** |
+| `arena_2v2` | ego + teammate (`minimal` stack) vs two opponents |
+| `test_room_full_stack` | the original small room with the full stack, for a quick sensor check |
+
+The arena has three goal hoops (circle / square / triangle) at each end in team colours, neutrally buoyant
+green and purple balls, court lines, a textured floor (so optical flow has something to track), and walls
+carrying real AprilTag 36h11 markers (ids in `generated/<s>/landmarks.yaml`) plus feature posters.
+Non-ego agents fly a `patrol` pattern by default (`others:=hover|idle` to change).
+
+### Sensor stacks (`config/sensor_stacks/`)
+| Stack | What |
+|---|---|
+| `full_stack` | **the proposed stack**: stereo (6 cm, 20° down), 2D lidar under the gondola, down ToF, baro, IMU, optical flow |
+| `full_stack_lidar_top` | lidar on top of the envelope |
+| `full_stack_lidar_gondola` | lidar level with the gondola (prop arm in the scan plane: shows self-occlusion) |
+| `full_stack_stereo_nose` | stereo on the envelope nose, level |
+| `full_stack_wide_baseline` | 12 cm stereo baseline |
+| `full_stack_multizone_tof` | + forward 8×8 ToF |
+| `vision_only` | no lidar (saves 42 g) |
+| `baseline` | the original model's sensors (mono, down cam, rangefinder, 3D lidar) |
+| `minimal`, `none` | cheap stacks for other agents |
+
+A variant only lists what changes (`extends: full_stack` + `modify` / `remove` / `add`). Mount points
+(`hull_nose`, `hull_top`, `gondola_bottom`, ...) move with the hull when it's auto-scaled. Field reference:
+the comments in `full_stack.yaml` and `SENSOR_DEFAULTS` in `scripts/build_scenario.py`.
+
+ROS topics for agent `blimp` with the full stack:
+```
+/blimp/imu                       /blimp/baro (FluidPressure)        /blimp/tof_down (LaserScan)
+/blimp/scan (LaserScan)          /blimp/stereo/{left,right}/{image_raw,camera_info}
+/blimp/flow/camera/image_raw     /blimp/flow/twist (TwistWithCovarianceStamped, from optical_flow_node.py)
+/blimp/altitude/{baro,tof}       /blimp/odometry/filtered (EKF)     /blimp/odom_gt
+/blimp/thrust/{left,right,vertical}                                 /sim/dynamic_poses (all model poses)
+```
+TF: `blimp/odom → blimp/base_link` (EKF, ground truth, or the SLAM method) and `blimp/base_link →` every
+sensor frame. Camera images use `*_optical` frames.
+
+### Run a scenario
+```bash
+source /opt/ros/humble/setup.bash
+cd ~/sai/sim_ws/src/blimp-sim
+ros2 launch launch/scenario.launch.py scenario:=arena_1v1
+ros2 launch launch/scenario.launch.py scenario:=arena_solo ego_stack:=full_stack_lidar_top   # placement variant
+python3 scripts/check_sensors.py generated/arena_1v1/scenario_info.yaml      # every topic + rate
+python3 scripts/waypoint_flight.py --ros-args -p use_sim_time:=true \
+    -p info_file:=generated/arena_1v1/scenario_info.yaml -p pattern:=lawnmower   # fly it
+```
+`odom_source:=ekf|gt|none` picks what provides `blimp/odom → base_link`. Add `flow_compare:=true` to log
+optical-flow error against ground truth.
+
+### Run the SLAM comparison
+```bash
+bash scripts/run_benchmark.sh slam_toolbox,rtabmap_stereo,apriltag        # arena_solo, loop pattern
+bash scripts/run_benchmark.sh all arena_solo lawnmower full_stack,vision_only
+python3 scripts/eval_traj.py --table results/summary.csv
+```
+Or by hand: start the scenario with the method's `odom_source` (see `config/slam/methods.yaml`), then
+`ros2 launch launch/slam.launch.py method:=<m> rviz:=true`, `traj_recorder.py`, `waypoint_flight.py`,
+and `eval_traj.py`. The full plan, how to pick a winner, and the sim-to-real caveats are in
+**[docs/SLAM_COMPARISON.md](docs/SLAM_COMPARISON.md)**.
+
+### Things to check on the first real run
+These were written without a Gazebo install, so check them once and adjust:
+- **Tag textures**: if `apriltag` never detects anything, set `landmarks.tag_mirror: true` (Gazebo may flip
+  plane UVs). Tags are positioned and used by their centre only, so their in-plane rotation doesn't matter.
+- **Flow sign**: run with `flow_compare:=true`. Negative correlation means set `flip_x` / `flip_y` on
+  `optical_flow_node.py`.
+- **camera_info**: Fortress publishes it at `<dirname(image topic)>/camera_info`. The generator relies on
+  this (and the original model now does too). Confirm with `ign topic -l | grep camera_info`.
+- **rtabmap parameter names** target rtabmap_ros 0.21+ (split `rtabmap_odom` / `rtabmap_slam` packages).
