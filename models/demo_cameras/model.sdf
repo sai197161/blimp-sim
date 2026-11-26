@@ -1,0 +1,34 @@
+<?xml version="1.0"?>
+<!-- Two static "spectator" cameras for scripts/demo.sh: one in a corner looking across the arena,
+     one straight down from above. Spawned at runtime, so the generated worlds stay unchanged.
+     Placed for the default 20 x 12 m arena centred on the origin. -->
+<sdf version="1.8">
+  <model name="demo_cameras">
+    <static>true</static>
+    <link name="overview_link">
+      <pose>-9.5 -5.5 5.5 0 0.33 0.514</pose>
+      <sensor name="overview" type="camera">
+        <topic>/demo/overview/image</topic>
+        <update_rate>10</update_rate>
+        <camera>
+          <horizontal_fov>1.5</horizontal_fov>
+          <image><width>1280</width><height>720</height><format>R8G8B8</format></image>
+          <clip><near>0.1</near><far>60</far></clip>
+        </camera>
+      </sensor>
+    </link>
+    <link name="topdown_link">
+      <!-- pitched straight down: image up = world +x, image right = world -y (demo_capture rotates it) -->
+      <pose>0 0 14 0 1.5708 0</pose>
+      <sensor name="topdown" type="camera">
+        <topic>/demo/topdown/image</topic>
+        <update_rate>10</update_rate>
+        <camera>
+          <horizontal_fov>1.0</horizontal_fov>
+          <image><width>600</width><height>1000</height><format>R8G8B8</format></image>
+          <clip><near>0.1</near><far>60</far></clip>
+        </camera>
+      </sensor>
+    </link>
+  </model>
+</sdf>

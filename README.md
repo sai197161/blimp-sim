@@ -199,6 +199,31 @@ blimp-sim/
 
 ---
 
+## Quick demo over SSH (no GUI)
+
+One command runs the arena headless, flies the blimp around a loop with the full sensor stack, and
+saves videos and pictures you can copy to your laptop:
+
+```bash
+bash scripts/demo.sh                     # arena_solo, 150 sim-seconds, loop
+bash scripts/demo.sh arena_1v1 120 loop  # with an opponent blimp patrolling
+```
+
+It writes `demo_out/<stamp>_<scenario>/` and prints the `scp` line to run on your laptop:
+
+| File | What it shows |
+|---|---|
+| `summary.png` | everything below in one picture (for a slide) |
+| `overview.mp4`, `topdown.mp4` | spectator cameras: the arena, landmarks, goals, balls and the blimp flying |
+| `onboard.mp4` | the blimp's left stereo camera, with the optical-flow camera inset |
+| `scan_map.png` | every 2D lidar scan placed with the ground-truth pose: the arena outline, with tags, pillars and goals marked |
+| `altitude.png` | height from ground truth vs the ToF and the barometer |
+| `sensors.txt` | messages received and rate for each sensor |
+
+Headless mode still renders the cameras, so the lab machine needs a GPU with EGL. If the videos are
+empty, check `sim.log`. With a desktop session (e.g. VNC), `HEADLESS=false bash scripts/demo.sh`
+also opens the Gazebo GUI.
+
 ## Arena, sensor stacks & SLAM benchmark
 
 ### How it fits together

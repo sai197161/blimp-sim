@@ -9,3 +9,4 @@ install/
 .DS_Store
 generated/
 results/
+demo_out/
