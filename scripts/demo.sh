@@ -19,6 +19,10 @@ OUT="$ROOT/demo_out/$(date +%Y%m%d_%H%M%S)_${SCENARIO}"
 GEN="$ROOT/generated/$SCENARIO"
 mkdir -p "$OUT"
 
+if [ ! -f /opt/ros/humble/setup.bash ]; then
+  echo "ROS 2 Humble not found: run this on the lab machine (Ubuntu 22.04 + Humble + Gazebo Fortress), e.g. over SSH."
+  exit 1
+fi
 set +u; source /opt/ros/humble/setup.bash; set -u   # ROS setup scripts read unset variables
 export ROS_DOMAIN_ID="${ROS_DOMAIN_ID:-44}"
 export IGN_PARTITION="${IGN_PARTITION:-blimp_demo_$USER}"
