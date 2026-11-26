@@ -1,0 +1,9 @@
+# Cheap stack for teammates/opponents that should still "see" (one camera + IMU). Low render cost.
+name: minimal
+description: IMU + low-res front camera
+gondola_base_mass: 0.025
+hull: {auto_scale: true}
+sensors:
+  - {name: imu, type: imu, mount: gondola, pose: [0, 0, 0, 0, 0, 0], mass: 0.001}
+  - {name: front_camera, type: camera, mount: gondola_front, pose: [0.01, 0, 0, 0, 0.2, 0],
+     width: 320, height: 240, rate: 15, mass: 0.003}

@@ -1,0 +1,5 @@
+# Ablation: drop the 42 g lidar. Is stereo + flow + baro + ToF enough? Costs a smaller hull.
+extends: full_stack
+name: vision_only
+description: full_stack without the 2D lidar
+remove: [scan]

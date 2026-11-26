@@ -1,0 +1,75 @@
+# SLAM / localization candidates. Read by launch/slam.launch.py and scripts/run_benchmark.sh.
+#   odom_source : what scenario.launch.py must provide (ekf | gt | none = method makes its own odometry)
+#   needs       : sensors the ego stack must have
+#   est         : where traj_recorder.py reads the estimate from
+#   cpu_pattern : command-line substring used to measure the method's CPU / RAM
+#   apt         : Humble packages
+ekf_only:
+  description: "Dead reckoning baseline: IMU + optical flow + baro + ToF in robot_localization, no map"
+  odom_source: ekf
+  needs: [imu, flow]
+  est: {mode: tf, map_frame: "{agent}/odom"}
+  cpu_pattern: ekf_node
+  apt: [ros-humble-robot-localization]
+slam_toolbox:
+  description: "2D lidar graph SLAM (Karto) on EKF odometry"
+  odom_source: ekf
+  needs: [scan, imu]
+  est: {mode: tf, map_frame: map}
+  cpu_pattern: slam_toolbox
+  apt: [ros-humble-slam-toolbox]
+cartographer_2d:
+  description: "Cartographer 2D: lidar + IMU + EKF odometry"
+  odom_source: ekf
+  needs: [scan, imu]
+  est: {mode: tf, map_frame: map}
+  cpu_pattern: cartographer
+  apt: [ros-humble-cartographer-ros]
+cartographer_2d_imu:
+  description: "Cartographer 2D: lidar + IMU only (no wheel-style odometry)"
+  odom_source: none
+  needs: [scan, imu]
+  est: {mode: tf, map_frame: map}
+  cpu_pattern: cartographer
+  apt: [ros-humble-cartographer-ros]
+rtabmap_stereo:
+  description: "RTAB-Map: stereo visual odometry (IMU gravity init) + visual loop closure"
+  odom_source: none
+  needs: [stereo, imu]
+  est: {mode: tf, map_frame: map}
+  cpu_pattern: rtabmap
+  apt: [ros-humble-rtabmap-ros]
+rtabmap_stereo_ekf:
+  description: "RTAB-Map: stereo mapping + loop closure on EKF odometry"
+  odom_source: ekf
+  needs: [stereo, imu, flow]
+  est: {mode: tf, map_frame: map}
+  cpu_pattern: rtabmap
+  apt: [ros-humble-rtabmap-ros]
+rtabmap_stereo_scan:
+  description: "RTAB-Map: stereo VO + 2D scan for proximity / loop-closure refinement"
+  odom_source: none
+  needs: [stereo, scan, imu]
+  est: {mode: tf, map_frame: map}
+  cpu_pattern: rtabmap
+  apt: [ros-humble-rtabmap-ros]
+rtabmap_scan:
+  description: "RTAB-Map: 2D lidar ICP on EKF odometry (lidar-only graph SLAM)"
+  odom_source: ekf
+  needs: [scan, imu, flow]
+  est: {mode: tf, map_frame: map}
+  cpu_pattern: rtabmap
+  apt: [ros-humble-rtabmap-ros]
+apriltag:
+  description: "No SLAM: localize against the known AprilTag map (needs >= 2 tags in view)"
+  odom_source: ekf
+  needs: [stereo, imu]
+  est: {mode: pose, topic: "/{agent}/tag_pose", type: PoseWithCovarianceStamped}
+  cpu_pattern: apriltag
+  apt: [ros-humble-apriltag-ros]
+# Built from source; not in launch/slam.launch.py. See docs/SLAM_COMPARISON.md for how to run them
+# with generated/<scenario>/blimp_camchain.yaml and blimp_imu.yaml, then record with
+# traj_recorder est_mode:=odom / pose.
+#   openvins     stereo-inertial MSCKF VIO   (github.com/rpng/open_vins, ROS 2 supported)
+#   orbslam3     stereo-inertial ORB-SLAM3   (community ROS 2 wrappers)
+#   vins_fusion  stereo-inertial VINS-Fusion (ROS 2 ports)

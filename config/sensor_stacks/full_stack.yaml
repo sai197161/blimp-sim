@@ -1,0 +1,78 @@
+# The proposed VIP stack: stereo + 2D lidar + ToF + barometer + IMU + optical flow.
+#
+# Poses are [x y z roll pitch yaw] (m, rad) relative to `mount`. Mount points (scale with the hull):
+#   hull (centre = base_link), hull_nose, hull_tail, hull_top, hull_bottom,
+#   gondola (gondola centre), gondola_front (front face), gondola_bottom (underside)
+# Downward-looking sensor: pitch = +1.5708.  Every field not given takes the default in
+# scripts/build_scenario.py (SENSOR_DEFAULTS). Masses are rough figures for small breakout boards;
+# replace them with weighed values.
+name: full_stack
+description: stereo + 2D lidar + down ToF + baro + IMU + optical flow (PMW3901-like)
+
+gondola_base_mass: 0.025      # kg: MCU, battery, wiring, frame (no sensors)
+hull:
+  auto_scale: true            # grow the envelope until net buoyancy = target_net_mass
+  target_net_mass: -0.002     # kg (slightly heavy, so it sinks slowly when unpowered)
+
+sensors:
+  - name: imu
+    type: imu
+    mount: gondola
+    pose: [0, 0, 0, 0, 0, 0]
+    rate: 200
+    gyro_std: 0.002           # rad/s per sample
+    accel_std: 0.02           # m/s^2 per sample
+    gyro_bias_std: 0.0002     # bias random walk (0 = no bias)
+    accel_bias_std: 0.002
+    mass: 0.001
+
+  - name: stereo
+    type: stereo_camera       # -> /<agent>/stereo/{left,right}/{image_raw,camera_info}
+    mount: gondola_front
+    pose: [0.01, 0, 0, 0, 0.35, 0]   # pitched 20 deg down: level cameras see the hull underside in the top third
+    baseline: 0.06
+    width: 640
+    height: 400
+    hfov: 1.5708
+    rate: 20
+    mass: 0.015
+
+  - name: scan
+    type: lidar_2d            # LD06 / LD19 class (~42 g, 12 m, 10 Hz, ~450 pts/rev)
+    mount: gondola_bottom
+    pose: [0, 0, -0.03, 0, 0, 0]     # below the gondola and vertical prop: clear 360 deg plane
+    samples: 450
+    range: [0.1, 12.0]
+    rate: 10
+    noise_std: 0.01
+    mass: 0.042
+
+  - name: tof_down
+    type: tof                 # VL53L1X class: single zone, 27 deg FOV, 4 m
+    mount: gondola_bottom
+    pose: [0.035, 0, 0, 0, 1.5708, 0]
+    zones: [1, 1]
+    fov: 0.47
+    range: [0.04, 4.0]
+    rate: 50
+    mass: 0.002
+
+  - name: baro
+    type: barometer           # BMP390 class
+    mount: gondola
+    pose: [0.03, 0.02, 0, 0, 0, 0]
+    rate: 50
+    noise_std_pa: 1.0         # ~8 cm altitude noise
+    mass: 0.001
+
+  - name: flow
+    type: optical_flow        # PMW3901 stand-in: small down camera + scripts/optical_flow_node.py
+    mount: gondola_bottom
+    pose: [0.05, 0, 0, 0, 1.5708, 0]
+    width: 64
+    height: 64
+    hfov: 0.733               # 42 deg
+    rate: 60
+    range_source: tof_down    # which ToF gives the height for flow -> metric velocity
+    imu_source: imu           # gyro de-rotation
+    mass: 0.002

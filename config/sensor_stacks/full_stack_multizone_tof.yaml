@@ -1,0 +1,7 @@
+# Adds a forward VL53L5CX-class 8x8 multizone ToF (balls / obstacles straight ahead).
+extends: full_stack
+name: full_stack_multizone_tof
+description: full_stack plus a forward 8x8 multizone ToF
+add:
+  - {name: tof_front, type: tof, mount: gondola_front, pose: [0.01, 0, -0.015, 0, 0, 0],
+     zones: [8, 8], fov: 0.785, range: [0.02, 4.0], rate: 15, mass: 0.003}
