@@ -10,6 +10,7 @@ for robot_localization.
 import math
 
 import rclpy
+from rclpy.executors import ExternalShutdownException
 from geometry_msgs.msg import PoseWithCovarianceStamped
 from rclpy.node import Node
 from rclpy.qos import qos_profile_sensor_data
@@ -94,7 +95,10 @@ class Altitude(Node):
 
 def main():
     rclpy.init()
-    rclpy.spin(Altitude())
+    try:
+        rclpy.spin(Altitude())
+    except (KeyboardInterrupt, ExternalShutdownException):
+        pass  # normal when the launch file shuts down
 
 
 if __name__ == "__main__":

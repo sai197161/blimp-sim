@@ -6,6 +6,7 @@ with perfect odometry (an upper bound on map quality, separate from odometry dri
 Params: input, parent_frame, child_frame.
 """
 import rclpy
+from rclpy.executors import ExternalShutdownException
 from geometry_msgs.msg import TransformStamped
 from nav_msgs.msg import Odometry
 from rclpy.node import Node
@@ -47,7 +48,10 @@ class OdomTF(Node):
 
 def main():
     rclpy.init()
-    rclpy.spin(OdomTF())
+    try:
+        rclpy.spin(OdomTF())
+    except (KeyboardInterrupt, ExternalShutdownException):
+        pass  # normal when the launch file shuts down
 
 
 if __name__ == "__main__":

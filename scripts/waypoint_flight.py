@@ -51,8 +51,10 @@ def yaw_of(q):
     return math.atan2(2 * (q.w * q.z + q.x * q.y), 1 - 2 * (q.y * q.y + q.z * q.z))
 
 
-def make_pattern(name, L, W, start, z, margin):
-    x0, x1, y0, y1 = -L / 2 + margin, L / 2 - margin, -W / 2 + margin, W / 2 - margin
+def make_pattern(name, L, W, start, z, margin, margin_x=None):
+    # margin_x keeps turns away from the goal hoops at both ends (they sit ~1.5 m from the end walls)
+    mx = margin if margin_x is None else margin_x
+    x0, x1, y0, y1 = -L / 2 + mx, L / 2 - mx, -W / 2 + margin, W / 2 - margin
     sx, sy, sz = start[:3]
     if name == "lawnmower":
         n_rows = max(2, int((y1 - y0) // 2.5) + 1)
@@ -100,7 +102,8 @@ class Flight(Node):
         self.trim = P("trim", float(ag.get("trim_thrust", 0.02)))
         start = ag.get("pose", [0, 0, 1.5, 0])
         self.wps, self.repeat = make_pattern(P("pattern", "lawnmower"), arena["length"], arena["width"], start,
-                                             P("altitude", 2.0), P("margin", 2.5))
+                                             P("altitude", 2.0), P("margin", 3.0),
+                                             P("margin_x", 3.5))
         self.radius = P("arrive_radius", 0.6)
         self.f_max = P("max_forward", 0.06)  # N per side
         self.timeout = P("timeout", 900.0)

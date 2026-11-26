@@ -115,7 +115,7 @@ def line_plot(series, title, ylabel, w=900, h=420):
     for k, (name, tt, vv, col) in enumerate(series):
         pts = np.array([[X(t), Y(v)] for t, v in zip(tt, vv)], np.int32)
         if len(pts) > 1:
-            cv2.polylines(img, [pts], False, col, 2 if k == 0 else 1, cv2.LINE_AA)
+            cv2.polylines(img, [pts], False, col, 2 if k == len(series) - 1 else 1, cv2.LINE_AA)
         cv2.line(img, (L + 10 + 180 * k, h - 14), (L + 40 + 180 * k, h - 14), col, 3)
         cv2.putText(img, name, (L + 46 + 180 * k, h - 9), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (30, 30, 30), 1, cv2.LINE_AA)
     return img
@@ -315,9 +315,9 @@ class DemoCapture(Node):
         return img
 
     def altitude(self):
-        return line_plot([("ground truth", [g[0] for g in self.gt], [g[3] for g in self.gt], (0, 0, 0)),
+        return line_plot([("barometer", [x[0] for x in self.baro], [x[1] for x in self.baro], (120, 120, 235)),
                           ("ToF (down)", [x[0] for x in self.tof], [x[1] for x in self.tof], (230, 120, 0)),
-                          ("barometer", [x[0] for x in self.baro], [x[1] for x in self.baro], (40, 40, 210))],
+                          ("ground truth", [g[0] for g in self.gt], [g[3] for g in self.gt], (0, 0, 0))],
                          "Height above floor: ground truth vs onboard sensors", "z [m]")
 
     def finish(self, why):

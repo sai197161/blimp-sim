@@ -9,6 +9,7 @@ import math
 import sys
 
 import rclpy
+from rclpy.executors import ExternalShutdownException
 import yaml
 from geometry_msgs.msg import TransformStamped
 from rclpy.node import Node
@@ -44,7 +45,10 @@ def main():
         msgs.append(m)
     br.sendTransform(msgs)
     node.get_logger().info(f"published {len(msgs)} static transforms")
-    rclpy.spin(node)
+    try:
+        rclpy.spin(node)
+    except (KeyboardInterrupt, ExternalShutdownException):
+        pass  # normal when the launch file shuts down
 
 
 if __name__ == "__main__":

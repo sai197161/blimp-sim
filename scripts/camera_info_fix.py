@@ -6,6 +6,7 @@ consumers (rtabmap, stereo_image_proc, ...) read as zero baseline. build_scenari
 for every stereo_camera: params input, output, tx.
 """
 import rclpy
+from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 from rclpy.qos import qos_profile_sensor_data
 from sensor_msgs.msg import CameraInfo
@@ -45,7 +46,10 @@ class Fix(Node):
 
 def main():
     rclpy.init()
-    rclpy.spin(Fix())
+    try:
+        rclpy.spin(Fix())
+    except (KeyboardInterrupt, ExternalShutdownException):
+        pass  # normal when the launch file shuts down
 
 
 if __name__ == "__main__":

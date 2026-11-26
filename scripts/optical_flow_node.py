@@ -22,6 +22,7 @@ import math
 import cv2
 import numpy as np
 import rclpy
+from rclpy.executors import ExternalShutdownException
 from geometry_msgs.msg import TwistWithCovarianceStamped, Vector3Stamped
 from nav_msgs.msg import Odometry
 from rclpy.node import Node
@@ -157,7 +158,10 @@ class OpticalFlow(Node):
 
 def main():
     rclpy.init()
-    rclpy.spin(OpticalFlow())
+    try:
+        rclpy.spin(OpticalFlow())
+    except (KeyboardInterrupt, ExternalShutdownException):
+        pass  # normal when the launch file shuts down
 
 
 if __name__ == "__main__":

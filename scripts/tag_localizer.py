@@ -14,6 +14,7 @@ import re
 
 import numpy as np
 import rclpy
+from rclpy.executors import ExternalShutdownException
 import yaml
 from geometry_msgs.msg import PoseWithCovarianceStamped
 from rclpy.node import Node
@@ -131,7 +132,10 @@ class TagLocalizer(Node):
 
 def main():
     rclpy.init()
-    rclpy.spin(TagLocalizer())
+    try:
+        rclpy.spin(TagLocalizer())
+    except (KeyboardInterrupt, ExternalShutdownException):
+        pass  # normal when the launch file shuts down
 
 
 if __name__ == "__main__":
