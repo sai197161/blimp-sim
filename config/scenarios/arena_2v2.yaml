@@ -1,0 +1,9 @@
+# 2v2: ego + teammate (red) vs two opponents (blue). Teammate has a cheap camera; opponents have no sensors.
+name: arena_2v2
+world: arena
+arena: {}
+agents:
+  - {name: blimp, role: ego, team: red, stack: full_stack, pose: [-6.0, -2.0, 2.0, 0.0]}
+  - {name: mate1, role: teammate, team: red, stack: minimal, pose: [-6.0, 2.5, 2.5, 0.0]}
+  - {name: opp1, role: opponent, team: blue, stack: none, pose: [6.0, -2.0, 2.5, 3.14159]}
+  - {name: opp2, role: opponent, team: blue, stack: none, pose: [6.0, 2.5, 3.0, 3.14159]}

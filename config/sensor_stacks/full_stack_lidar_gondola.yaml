@@ -1,0 +1,7 @@
+# Placement variant: lidar level with the gondola. The prop arm and props sit in the scan plane,
+# so expect self-hits at +/-90 deg. Shows why the default mounts it under the gondola.
+extends: full_stack
+name: full_stack_lidar_gondola
+description: full_stack with the 2D lidar level with the gondola (prop arm in the scan plane)
+modify:
+  scan: {mount: gondola, pose: [0, 0, 0, 0, 0, 0]}

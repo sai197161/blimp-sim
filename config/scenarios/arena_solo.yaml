@@ -1,0 +1,6 @@
+# One blimp with the full stack in the default arena. The standard SLAM benchmark scenario.
+name: arena_solo
+world: arena
+arena: {}          # all defaults: see arena_1v1.yaml for every knob
+agents:
+  - {name: blimp, role: ego, team: red, stack: full_stack, pose: [-6.0, 0.0, 2.0, 0.0]}

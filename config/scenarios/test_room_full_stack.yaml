@@ -1,0 +1,5 @@
+# The original small test room (worlds/blimp_test.sdf) with the full stack: quick sensor sanity check.
+name: test_room_full_stack
+world: blimp_test
+agents:
+  - {name: blimp, role: ego, team: red, stack: full_stack, pose: [0.0, 0.0, 1.5, 0.0]}

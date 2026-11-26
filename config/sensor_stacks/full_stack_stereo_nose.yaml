@@ -1,0 +1,7 @@
+# Placement variant: stereo pair on the nose of the envelope, looking level. No hull occlusion and a
+# higher viewpoint, but far from the IMU (lever arm) and on a flexible envelope in reality.
+extends: full_stack
+name: full_stack_stereo_nose
+description: full_stack with the stereo pair on the hull nose, level
+modify:
+  stereo: {mount: hull_nose, pose: [0.01, 0, 0, 0, 0, 0], mass: 0.018}

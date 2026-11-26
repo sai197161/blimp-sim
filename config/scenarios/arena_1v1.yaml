@@ -1,0 +1,42 @@
+# Ego blimp vs one scripted opponent, with every arena option written out.
+# Arena size is a guess: set length/width/wall_height to the real venue.
+name: arena_1v1
+world: arena
+arena:
+  length: 20.0              # x (m), goals sit at the +/-x ends
+  width: 12.0               # y (m)
+  wall_height: 6.0
+  ceiling: false
+  seed: 7                   # ball placement + floor tile rotation
+  floor_tile: 2.5           # textured floor tile size (m)
+  court_lines: true
+  balls:
+    green: 4
+    purple: 4
+    radius: 0.12
+    z_range: [1.0, 3.5]
+    net_mass: 0.0           # kg; 0 = neutrally buoyant (hovers), >0 = slowly sinks
+    keepout_x: 3.0          # keep balls this far from the end walls
+  goals:
+    shapes: [circle, square, triangle]
+    size: 1.0               # opening width (m)
+    thickness: 0.06
+    heights: [2.5, 3.5, 3.0] # centre height per goal
+    y_positions: [-3.0, 0.0, 3.0]
+    inset: 1.5              # distance from end wall
+    teams: [blue, red]      # team defending the +x goals, then the -x goals (= the side it spawns on)
+  landmarks:
+    apriltags: true         # real tag36h11 ids 0..39 on the walls -> generated/<scenario>/landmarks.yaml
+    tag_size: 0.6           # printed panel (m); black-border edge = 0.78 * this
+    tag_spacing: 3.0
+    tag_heights: [1.4, 2.6]  # flight altitude ~2 m; the 20 deg down-pitched stereo misses tags much above 2.6 m
+    tag_mirror: false       # set true if apriltag_ros detects nothing: Gazebo's plane UVs flipped the image
+    tag_rotation_deg: 0.0
+    posters: true           # textured panels between tags, for visual features
+    poster_size: 1.2
+    poster_height: 2.0
+    pillars: [[-4.0, 4.0], [4.0, -4.0]]
+    pillar_radius: 0.25
+agents:
+  - {name: blimp, role: ego, team: red, stack: full_stack, pose: [-6.0, 0.0, 2.0, 0.0]}
+  - {name: opp1, role: opponent, team: blue, stack: none, pose: [6.0, 0.0, 2.5, 3.14159]}

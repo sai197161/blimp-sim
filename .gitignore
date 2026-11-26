@@ -7,3 +7,5 @@ log/
 build/
 install/
 .DS_Store
+generated/
+results/

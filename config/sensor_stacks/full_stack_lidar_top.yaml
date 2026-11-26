@@ -1,0 +1,7 @@
+# Placement variant: 2D lidar on top of the envelope (nothing in its plane, but 0.7 m above the
+# IMU, and in reality needs a mast/cable run). Compare scan quality and SLAM ATE against full_stack.
+extends: full_stack
+name: full_stack_lidar_top
+description: full_stack with the 2D lidar on top of the hull
+modify:
+  scan: {mount: hull_top, pose: [0, 0, 0.04, 0, 0, 0], mass: 0.050}   # +8 g for mast and cable

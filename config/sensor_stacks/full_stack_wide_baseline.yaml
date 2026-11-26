@@ -1,0 +1,6 @@
+# Stereo variant: 12 cm baseline (better depth at the 5-10 m arena scale, harder to mount).
+extends: full_stack
+name: full_stack_wide_baseline
+description: full_stack with a 12 cm stereo baseline
+modify:
+  stereo: {baseline: 0.12, mass: 0.018}
