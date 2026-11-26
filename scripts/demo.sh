@@ -19,7 +19,7 @@ OUT="$ROOT/demo_out/$(date +%Y%m%d_%H%M%S)_${SCENARIO}"
 GEN="$ROOT/generated/$SCENARIO"
 mkdir -p "$OUT"
 
-source /opt/ros/humble/setup.bash
+set +u; source /opt/ros/humble/setup.bash; set -u   # ROS setup scripts read unset variables
 export ROS_DOMAIN_ID="${ROS_DOMAIN_ID:-44}"
 export IGN_PARTITION="${IGN_PARTITION:-blimp_demo_$USER}"
 export GZ_PARTITION="$IGN_PARTITION"

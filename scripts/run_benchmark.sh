@@ -21,7 +21,7 @@ PATTERN="${3:-loop}"
 STACKS="${4:-}"
 AGENT="${AGENT:-blimp}"
 TIMEOUT="${TIMEOUT:-900}"   # sim seconds the flight may take
-source /opt/ros/humble/setup.bash
+set +u; source /opt/ros/humble/setup.bash; set -u   # ROS setup scripts read unset variables
 export ROS_DOMAIN_ID="${ROS_DOMAIN_ID:-43}"
 export IGN_PARTITION="${IGN_PARTITION:-sai_blimp_bench}"
 export GZ_PARTITION="$IGN_PARTITION"
