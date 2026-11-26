@@ -20,6 +20,22 @@ from rclpy.node import Node
 from rclpy.qos import qos_profile_sensor_data
 from sensor_msgs.msg import Imu
 from tf2_msgs.msg import TFMessage
+from rcl_interfaces.msg import ParameterDescriptor
+
+
+def param(node, name, default):
+    """Declare (or re-read) a parameter. Tolerates 150 for a float default, "true" for a bool, etc."""
+    if node.has_parameter(name):
+        v = node.get_parameter(name).value
+    else:
+        v = node.declare_parameter(name, default, ParameterDescriptor(dynamic_typing=True)).value
+    if isinstance(default, bool):
+        return v if isinstance(v, bool) else str(v).lower() in ("1", "true", "yes")
+    if isinstance(default, float) and isinstance(v, int):
+        return float(v)
+    if isinstance(default, str) and v is not None and not isinstance(v, str):
+        return str(v)
+    return v
 
 
 def rpy_R(r, p, y):
@@ -37,7 +53,7 @@ def quat_R(x, y, z, w):
 class TagLocalizer(Node):
     def __init__(self):
         super().__init__("tag_localizer")
-        P = lambda n, d: self.declare_parameter(n, d).value  # noqa: E731
+        P = lambda n, d: param(self, n, d)  # noqa: E731
         a = P("agent", "blimp")
         self.cam = P("camera_frame", f"{a}/stereo_left_optical")
         self.min_tags = P("min_tags", 2)

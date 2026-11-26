@@ -38,7 +38,7 @@ def main():
         m = TransformStamped()
         m.header.stamp = node.get_clock().now().to_msg()
         m.header.frame_id, m.child_frame_id = t["parent"], t["child"]
-        m.transform.translation.x, m.transform.translation.y, m.transform.translation.z = t["xyz"]
+        m.transform.translation.x, m.transform.translation.y, m.transform.translation.z = (float(v) for v in t["xyz"])
         q = quat(*t["rpy"])
         m.transform.rotation.x, m.transform.rotation.y, m.transform.rotation.z, m.transform.rotation.w = q
         msgs.append(m)

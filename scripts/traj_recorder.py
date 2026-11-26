@@ -22,11 +22,27 @@ from nav_msgs.msg import Odometry
 from rclpy.node import Node
 from rclpy.time import Time
 from tf2_ros import Buffer, TransformListener
+from rcl_interfaces.msg import ParameterDescriptor
 
 try:
     import psutil
 except ImportError:
     psutil = None
+
+
+def param(node, name, default):
+    """Declare (or re-read) a parameter. Tolerates 150 for a float default, "true" for a bool, etc."""
+    if node.has_parameter(name):
+        v = node.get_parameter(name).value
+    else:
+        v = node.declare_parameter(name, default, ParameterDescriptor(dynamic_typing=True)).value
+    if isinstance(default, bool):
+        return v if isinstance(v, bool) else str(v).lower() in ("1", "true", "yes")
+    if isinstance(default, float) and isinstance(v, int):
+        return float(v)
+    if isinstance(default, str) and v is not None and not isinstance(v, str):
+        return str(v)
+    return v
 
 
 def stamp(h):
@@ -40,7 +56,7 @@ def line(t, p, q):
 class Recorder(Node):
     def __init__(self):
         super().__init__("traj_recorder")
-        P = lambda n, d: self.declare_parameter(n, d).value  # noqa: E731
+        P = lambda n, d: param(self, n, d)  # noqa: E731
         out = P("out_dir", "results/run")
         os.makedirs(out, exist_ok=True)
         self.f_gt = open(os.path.join(out, "gt.tum"), "w")

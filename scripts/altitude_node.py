@@ -14,12 +14,28 @@ from geometry_msgs.msg import PoseWithCovarianceStamped
 from rclpy.node import Node
 from rclpy.qos import qos_profile_sensor_data
 from sensor_msgs.msg import FluidPressure, Imu, LaserScan
+from rcl_interfaces.msg import ParameterDescriptor
+
+
+def param(node, name, default):
+    """Declare (or re-read) a parameter. Tolerates 150 for a float default, "true" for a bool, etc."""
+    if node.has_parameter(name):
+        v = node.get_parameter(name).value
+    else:
+        v = node.declare_parameter(name, default, ParameterDescriptor(dynamic_typing=True)).value
+    if isinstance(default, bool):
+        return v if isinstance(v, bool) else str(v).lower() in ("1", "true", "yes")
+    if isinstance(default, float) and isinstance(v, int):
+        return float(v)
+    if isinstance(default, str) and v is not None and not isinstance(v, str):
+        return str(v)
+    return v
 
 
 class Altitude(Node):
     def __init__(self):
         super().__init__("altitude")
-        P = lambda n, d: self.declare_parameter(n, d).value  # noqa: E731
+        P = lambda n, d: param(self, n, d)  # noqa: E731
         ns = P("agent", "blimp")
         self.frame = P("frame_id", f"{ns}/odom")
         self.tof_z = P("tof_z_offset", -0.42)  # ToF z in base_link (negative = below)

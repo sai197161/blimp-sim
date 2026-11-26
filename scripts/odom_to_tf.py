@@ -10,15 +10,31 @@ from geometry_msgs.msg import TransformStamped
 from nav_msgs.msg import Odometry
 from rclpy.node import Node
 from tf2_ros import TransformBroadcaster
+from rcl_interfaces.msg import ParameterDescriptor
+
+
+def param(node, name, default):
+    """Declare (or re-read) a parameter. Tolerates 150 for a float default, "true" for a bool, etc."""
+    if node.has_parameter(name):
+        v = node.get_parameter(name).value
+    else:
+        v = node.declare_parameter(name, default, ParameterDescriptor(dynamic_typing=True)).value
+    if isinstance(default, bool):
+        return v if isinstance(v, bool) else str(v).lower() in ("1", "true", "yes")
+    if isinstance(default, float) and isinstance(v, int):
+        return float(v)
+    if isinstance(default, str) and v is not None and not isinstance(v, str):
+        return str(v)
+    return v
 
 
 class OdomTF(Node):
     def __init__(self):
         super().__init__("odom_to_tf")
-        self.parent = self.declare_parameter("parent_frame", "blimp/odom").value
-        self.child = self.declare_parameter("child_frame", "blimp/base_link").value
+        self.parent = param(self, "parent_frame", "blimp/odom")
+        self.child = param(self, "child_frame", "blimp/base_link")
         self.br = TransformBroadcaster(self)
-        self.create_subscription(Odometry, self.declare_parameter("input", "/blimp/odom_gt").value, self.cb, 20)
+        self.create_subscription(Odometry, param(self, "input", "/blimp/odom_gt"), self.cb, 20)
 
     def cb(self, m):
         t = TransformStamped()

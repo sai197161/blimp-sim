@@ -25,6 +25,22 @@ import yaml
 from nav_msgs.msg import Odometry
 from rclpy.node import Node
 from std_msgs.msg import Float64
+from rcl_interfaces.msg import ParameterDescriptor
+
+
+def param(node, name, default):
+    """Declare (or re-read) a parameter. Tolerates 150 for a float default, "true" for a bool, etc."""
+    if node.has_parameter(name):
+        v = node.get_parameter(name).value
+    else:
+        v = node.declare_parameter(name, default, ParameterDescriptor(dynamic_typing=True)).value
+    if isinstance(default, bool):
+        return v if isinstance(v, bool) else str(v).lower() in ("1", "true", "yes")
+    if isinstance(default, float) and isinstance(v, int):
+        return float(v)
+    if isinstance(default, str) and v is not None and not isinstance(v, str):
+        return str(v)
+    return v
 
 
 def wrap(a):
@@ -73,7 +89,7 @@ def make_pattern(name, L, W, start, z, margin):
 class Flight(Node):
     def __init__(self):
         super().__init__("waypoint_flight")
-        P = lambda n, d: self.declare_parameter(n, d).value  # noqa: E731
+        P = lambda n, d: param(self, n, d)  # noqa: E731
         self.agent = P("agent", "blimp")
         info = {}
         if P("info_file", ""):

@@ -9,15 +9,31 @@ import rclpy
 from rclpy.node import Node
 from rclpy.qos import qos_profile_sensor_data
 from sensor_msgs.msg import CameraInfo
+from rcl_interfaces.msg import ParameterDescriptor
+
+
+def param(node, name, default):
+    """Declare (or re-read) a parameter. Tolerates 150 for a float default, "true" for a bool, etc."""
+    if node.has_parameter(name):
+        v = node.get_parameter(name).value
+    else:
+        v = node.declare_parameter(name, default, ParameterDescriptor(dynamic_typing=True)).value
+    if isinstance(default, bool):
+        return v if isinstance(v, bool) else str(v).lower() in ("1", "true", "yes")
+    if isinstance(default, float) and isinstance(v, int):
+        return float(v)
+    if isinstance(default, str) and v is not None and not isinstance(v, str):
+        return str(v)
+    return v
 
 
 class Fix(Node):
     def __init__(self):
         super().__init__("camera_info_fix")
-        self.tx = float(self.declare_parameter("tx", 0.0).value)
-        self.pub = self.create_publisher(CameraInfo, self.declare_parameter("output", "camera_info").value,
+        self.tx = float(param(self, "tx", 0.0))
+        self.pub = self.create_publisher(CameraInfo, param(self, "output", "camera_info"),
                                          qos_profile_sensor_data)
-        self.create_subscription(CameraInfo, self.declare_parameter("input", "camera_info_gz").value, self.cb,
+        self.create_subscription(CameraInfo, param(self, "input", "camera_info_gz"), self.cb,
                                  qos_profile_sensor_data)
 
     def cb(self, m):
